@@ -57,9 +57,7 @@ typedef struct {
  * fix it.
  */
 char *n2pk_to_ascii(char *widestring, size_t length) {
-    unsigned int i;
-
-    for (i = 0; i < length; ++i) {
+    for (unsigned int i = 0; i < length; ++i) {
         if (widestring[i] == 0) {
             unsigned int j;
             char nuchar = 0;
@@ -119,7 +117,6 @@ n2pk_file_entry *n2pk_read_file_entry(FILE *stream) {
 }
 
 n2pk_footer *n2pk_read_footer(FILE *stream, n2pk_header *header) {
-    unsigned int i;
     n2pk_footer *footer;
 
     footer = (n2pk_footer *)calloc(1, sizeof(n2pk_footer));
@@ -130,7 +127,7 @@ n2pk_footer *n2pk_read_footer(FILE *stream, n2pk_header *header) {
 
     footer->entries = (n2pk_file_entry **)calloc(footer->entry_count, sizeof(n2pk_file_entry *));
 
-    for (i = 0; i < footer->entry_count; ++i) {
+    for (unsigned int i = 0; i < footer->entry_count; ++i) {
         footer->entries[i] = n2pk_read_file_entry(stream);
     }
 
@@ -138,9 +135,7 @@ n2pk_footer *n2pk_read_footer(FILE *stream, n2pk_header *header) {
 }
 
 void n2pk_free_footer(n2pk_footer *footer) {
-    unsigned int i;
-
-    for (i = 0; i < footer->entry_count; ++i) {
+    for (unsigned int i = 0; i < footer->entry_count; ++i) {
         n2pk_file_entry *entry = footer->entries[i];
 
         free(entry->filename);
@@ -152,9 +147,7 @@ void n2pk_free_footer(n2pk_footer *footer) {
 }
 
 void n2pk_print_entries(n2pk_footer *footer) {
-    unsigned int i;
-
-    for (i = 0; i < footer->entry_count; ++i) {
+    for (unsigned int i = 0; i < footer->entry_count; ++i) {
         n2pk_file_entry *entry = footer->entries[i];
 
         printf("%s: %lu at %lu\n", n2pk_to_ascii(entry->filename, entry->filename_size * 2), entry->file_size, entry->file_offset + 44);
@@ -162,14 +155,12 @@ void n2pk_print_entries(n2pk_footer *footer) {
 }
 
 void n2pk_extract_entries(const char *outdir, FILE *stream, n2pk_footer *footer) {
-    unsigned int i;
-
     if (mkdir(outdir, S_IRWXU) != 0 && errno != EEXIST) {
         perror("Couldn't create output directory");
         return;
     }
 
-    for (i = 0; i < footer->entry_count; ++i) {
+    for (unsigned int i = 0; i < footer->entry_count; ++i) {
         n2pk_file_entry *entry = footer->entries[i];
         char *filename = NULL;
         char *payload = NULL;
