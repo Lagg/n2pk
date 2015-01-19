@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE binary_file_format SYSTEM "BinaryFileFormat.dtd">
+<binary_file_format name="N2PK" type_name="" comment="Mapping of Neocore's N2PK format used for Van Helsing. Copyright(C) 2015+, Anthony Garcia &lt;anthony@lagg.me&gt;. Distributed under the ISC License." expr="" default_byte_order="little" default_read_only="false" default_char_set="ansi" web_site="http://lagg.me">
+  <struct name="header" type_name="" comment="" expr="">
+    <data type="int" name="magic" format="unsigned" len="4" display=""/>
+    <data type="string" name="signature" format="unicode" len="32" display=""/>
+    <data type="int" name="body_size" format="unsigned" len="8" display=""/>
+  </struct>
+  <data type="none" name="payload" len="header.body_size" comment="The raw payload storing the contained files. Offsets and sizes are given by the file entry table in the footer."/>
+  <struct name="footer" type_name="" comment="Contains the entry count and table storing filename, size and offset metadata" expr="">
+    <data type="int" name="entry_count" len="4" format="unsigned" display="" comment="The number of file entries that follow. Could be used for a basic integrity check"/>
+    <for name="entry" count="" stop_test="" type_name="" comment="">
+      <struct name="file_entry" type_name="" comment="" expr="">
+        <data type="int" name="hash" format="unsigned" display="" len="4" comment="This is apparently the hash to assist in runtime table creation. Whether or not it's the hash of the payload or filename is undetermined."/>
+        <data type="int" name="filename_size" format="unsigned" len="4" display=""/>
+        <data type="string" name="filename" format="unicode" len="filename_size * 2" display="" comment="Always UTF-16 apparently hence multiply by 2 since the size is in characters rather than bytes"/>
+        <data type="none" name="reserved" len="2" comment="This is either a null terminator or reserved space. In practice it's both"/>
+        <data type="int" name="file_offset" format="unsigned" len="8" display="" comment="NOTE: This is NOT COUNTING the main header. So it'll be file_offset + sizeof(header)"/>
+        <data type="int" name="file_size" format="unsigned" len="8" display=""/>
+      </struct>
+    </for>
+  </struct>
+</binary_file_format>
