@@ -18,6 +18,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <unistd.h>
+
 /* Some of the strings below
  * are unicode, but for now they'll be read
  * in as is
@@ -150,7 +152,7 @@ void n2pk_print_entries(n2pk_footer *footer) {
     for (unsigned int i = 0; i < footer->entry_count; ++i) {
         n2pk_file_entry *entry = footer->entries[i];
 
-        printf("%s: %lu at %lu\n", n2pk_to_ascii(entry->filename, entry->filename_size * 2), entry->file_size, entry->file_offset + 44);
+        printf("%08X\t%lu\t%lu\t%s\n", entry->hash, entry->file_offset + 44, entry->file_size, n2pk_to_ascii(entry->filename, entry->filename_size * 2));
     }
 }
 
@@ -196,11 +198,39 @@ int main(int argc, char **argv) {
     char *output_dir = NULL;
     char *extension_in_inputfn = NULL;
 
-    if (argc > 1) {
-        input_filename = argv[1];
+    int opt = 0;
+    int operation = 0;
+    const char * const usage = "-f <filename|stdin> | -l | -h | -x";
+
+    while ((opt = getopt(argc, argv, "f:lhx")) != -1) {
+        switch (opt) {
+            case 'f':
+                input_filename = (char *)malloc(strlen(optarg) + 1);
+                strcpy(input_filename, optarg);
+                break;
+            case 'l':
+            case 'x':
+                operation = opt;
+                break;
+            case 'h':
+                fprintf(stderr, "%s %s\n\n-f: file to read from. Pass 'stdin' for stdin.\n-h: help\n-l: list file entries\n-x: extract files\n", argv[0], usage);
+                return EXIT_SUCCESS;
+                break;
+            default:
+                fprintf(stderr, "Usage: %s %s\n", argv[0], usage);
+                return EXIT_FAILURE;
+                break;
+        }
+    }
+
+    if (!input_filename) {
+        fprintf(stderr, "Archive filename required\n");
+        return EXIT_FAILURE;
+    }
+
+    if (strcmp(input_filename, "stdin") != 0) {
         stream = fopen(input_filename, "rb");
     } else {
-        input_filename = "stdin";
         stream = stdin;
     }
 
@@ -218,20 +248,24 @@ int main(int argc, char **argv) {
 
     ftr = n2pk_read_footer(stream, hdr);
 
-    n2pk_print_entries(ftr);
+    if (operation == 'l') {
+        n2pk_print_entries(ftr);
+    } else if (operation == 'x') {
+        output_dir = (char *)calloc(strlen(input_filename) + 1, 1);
+        strcpy(output_dir, input_filename);
+        extension_in_inputfn = strstr(output_dir, ".n2pk");
 
-    output_dir = (char *)calloc(strlen(input_filename) + 1, 1);
-    strcpy(output_dir, input_filename);
-    extension_in_inputfn = strstr(output_dir, ".n2pk");
+        if (extension_in_inputfn) {
+            *extension_in_inputfn = 0;
+        }
 
-    if (extension_in_inputfn) {
-        *extension_in_inputfn = 0;
+        n2pk_extract_entries(output_dir, stream, ftr);
+
+        free(output_dir);
     }
 
-    n2pk_extract_entries(output_dir, stream, ftr);
-
     fclose(stream);
-    free(output_dir);
+    free(input_filename);
     free(hdr);
     n2pk_free_footer(ftr);
 
